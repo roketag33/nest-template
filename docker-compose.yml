@@ -1,0 +1,35 @@
+version: '3.8'
+
+services:
+  postgres:
+    container_name: postgres
+    image: postgres:latest
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: nest_template
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  redis:
+    container_name: redis
+    image: redis:alpine
+    volumes:
+      - redis_data:/data
+
+  mailhog:
+    container_name: mailhog
+    image: mailhog/mailhog
+
+  adminer:
+    container_name: adminer
+    image: adminer
+    environment:
+      ADMINER_DEFAULT_SERVER: postgres
+      ADMINER_DESIGN: dracula
+    depends_on:
+      - postgres
+
+volumes:
+  postgres_data:
+  redis_data:
