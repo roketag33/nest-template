@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 
 # NestJS Template API
 
@@ -194,3 +195,7 @@ NestJS - Le framework utilisé
 Prisma - ORM
 Docker - Conteneurisation
 GitHub Actions - CI/CD
+=======
+# nest-template
+template pour un start nest-template
+>>>>>>> 35ba729a1f8db864da3bcf37b229acfb60f947f7
