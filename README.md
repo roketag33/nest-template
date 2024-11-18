@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 
 # NestJS Template API
 
@@ -18,7 +17,6 @@ Un template NestJS préconfiguré avec :
 ### 1. Utilisez ce template
 
 Cliquez sur "Use this template" sur GitHub ou clonez le manuellement :
-```bash
 git clone [URL_DU_REPO] mon-projet
 cd mon-projet
 2. Installation
@@ -33,7 +31,6 @@ yarn prisma generate
 3. Configuration
 bash
 
-Copy
 # Copier le fichier d'environnement
 cp .env.example .env
 ⚙️ Configuration
@@ -42,7 +39,6 @@ Modifiez le fichier .env avec vos valeurs :
 
 env
 
-Copy
 # Database
 DATABASE_URL="postgresql://postgres:postgres@localhost:5432/db_name"
 POSTGRES_USER=postgres
@@ -74,9 +70,7 @@ DEPLOY_USER : Utilisateur SSH pour le déploiement
 DEPLOY_KEY : Clé SSH privée pour l'authentification
 🐳 Docker
 Développement
-bash
 
-Copy
 # Démarrer tous les services
 docker-compose up -d
 
@@ -86,9 +80,8 @@ docker-compose logs -f
 # Arrêter les services
 docker-compose down
 Production
-bash
 
-Copy
+
 # Démarrer en production
 docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d
 
@@ -96,9 +89,8 @@ docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d
 docker-compose -f docker-compose.yml -f docker-compose.prod.yml pull
 docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d
 📝 Scripts Disponibles
-bash
 
-Copy
+
 # Développement
 yarn start:dev        # Démarrage en mode watch
 yarn start:debug     # Démarrage avec debugger
@@ -130,7 +122,6 @@ Interface MailHog : http://localhost:8025
 Logs : ./logs/
 📁 Structure du Projet
 
-Copy
 .
 ├── src/
 │   ├── common/         # Décorateurs, filtres, guards, etc.
@@ -195,7 +186,3 @@ NestJS - Le framework utilisé
 Prisma - ORM
 Docker - Conteneurisation
 GitHub Actions - CI/CD
-=======
-# nest-template
-template pour un start nest-template
->>>>>>> 35ba729a1f8db864da3bcf37b229acfb60f947f7
