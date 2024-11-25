@@ -1,15 +1,10 @@
-import {
-    Controller, Post, UseGuards, Request, Body
-} from '@nestjs/common';
-import {
-    ApiTags, ApiOperation, ApiResponse, ApiBearerAuth,
-    ApiBody, ApiOkResponse, ApiUnauthorizedResponse
-} from '@nestjs/swagger';
+import { Controller, Post, Body, UseGuards, Request, UnauthorizedException } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { LocalAuthGuard } from './guards/local-auth.guard';
 import { Public } from './decorators/public.decorator';
 import { LoginDto } from './dto/login.dto';
-import { TokenResponseDto } from './dto/token-response.dto';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiBody } from '@nestjs/swagger';
+import { RequestWithUser } from './interfaces/request-with-user.interface';
 
 @ApiTags('auth')
 @Controller('auth')
@@ -19,19 +14,46 @@ export class AuthController {
     @Public()
     @UseGuards(LocalAuthGuard)
     @Post('login')
-    @ApiOperation({
-        summary: 'User login',
-        description: 'Login with email and password to receive a JWT token'
-    })
+    @ApiOperation({ summary: 'Login user' })
     @ApiBody({ type: LoginDto })
-    @ApiOkResponse({
+    @ApiResponse({
+        status: 200,
         description: 'User successfully logged in',
-        type: TokenResponseDto
+        schema: {
+            properties: {
+                access_token: { type: 'string' },
+                user: {
+                    type: 'object',
+                    properties: {
+                        id: { type: 'number' },
+                        email: { type: 'string' },
+                        name: { type: 'string' }
+                    }
+                }
+            }
+        }
     })
-    @ApiUnauthorizedResponse({
-        description: 'Invalid credentials'
+    @ApiResponse({ status: 401, description: 'Unauthorized' })
+    async login(@Request() req: RequestWithUser) {
+        return this.authService.login(req.user);
+    }
+
+    @Post('verify-2fa')
+    @ApiOperation({ summary: 'Verify 2FA token' })
+    @ApiBody({
+        schema: {
+            properties: {
+                token: { type: 'string' }
+            }
+        }
     })
-    async login(@Body() loginDto: LoginDto) {
-        return this.authService.login(loginDto);
+    @ApiResponse({ status: 200, description: 'Token verified successfully' })
+    @ApiResponse({ status: 401, description: 'Invalid token' })
+    async verify2FA(
+        @Request() req: RequestWithUser,
+        @Body('token') token: string
+    ) {
+        const userId = req.user.id;
+        return this.authService.verify2FA(userId, token);
     }
 }
