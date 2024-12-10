@@ -10,13 +10,20 @@ datasource db {
 }
 
 model User {
-  id               Int      @id @default(autoincrement())
-  email            String   @unique
-  password         String
+  id               Int       @id @default(autoincrement())
+  email            String    @unique
+  password         String?
   name             String?
-  emailVerified    Boolean  @default(false)
+  avatar           String?
+  emailVerified    Boolean   @default(false)
   twoFactorSecret  String?
-  twoFactorEnabled Boolean  @default(false)
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+  twoFactorEnabled Boolean   @default(false)
+  provider         String?
+  providerId       String?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  lastLoginAt      DateTime?
+  roles            String[]
+
+  @@unique([provider, providerId])
 }

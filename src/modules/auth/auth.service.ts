@@ -4,7 +4,8 @@ import { UsersService } from '../users/users.service';
 import * as bcrypt from 'bcrypt';
 import { PrismaService } from "@/prisma/prisma.service";
 import { TwoFactorService } from "@/modules/auth/two-factor/two-factor.service";
-import { User } from '@prisma/client';
+import {Prisma, User } from '@prisma/client';
+import {OAuthUser} from "@/modules/oauth/interfaces/oauth.interface";
 
 @Injectable()
 export class AuthService {
@@ -17,7 +18,7 @@ export class AuthService {
 
     async validateUser(email: string, password: string): Promise<Omit<User, 'password'> | null> {
         const user = await this.usersService.findByEmail(email);
-        if (!user) {
+        if (!user || !user.password) {
             return null;
         }
 
@@ -90,4 +91,5 @@ export class AuthService {
             },
         };
     }
+
 }

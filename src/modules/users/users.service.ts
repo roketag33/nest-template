@@ -295,7 +295,6 @@ export class UsersService {
     }
 
     async changePassword(id: number, oldPassword: string, newPassword: string) {
-        // Trouver l'utilisateur
         const user = await this.prisma.user.findUnique({
             where: { id },
         });
@@ -304,13 +303,16 @@ export class UsersService {
             throw new NotFoundException(`User with ID ${id} not found`);
         }
 
-        // Vérifier l'ancien mot de passe
+        // Vérifier si l'utilisateur a un mot de passe (n'est pas un utilisateur OAuth)
+        if (!user.password) {
+            throw new UnauthorizedException('Cannot change password for OAuth users');
+        }
+
         const isPasswordValid = await bcrypt.compare(oldPassword, user.password);
         if (!isPasswordValid) {
             throw new UnauthorizedException('Current password is incorrect');
         }
 
-        // Hasher et mettre à jour le nouveau mot de passe
         const hashedPassword = await bcrypt.hash(newPassword, 10);
 
         const updatedUser = await this.prisma.user.update({
@@ -325,8 +327,7 @@ export class UsersService {
             },
         });
 
-        // Envoyer l'email de confirmation
-        await this.mailService.sendPasswordChanged(updatedUser as any);
+        await this.mailService.sendPasswordChanged(updatedUser);
 
         return { message: 'Password changed successfully' };
     }
@@ -334,11 +335,16 @@ export class UsersService {
     async validateUser(email: string, password: string) {
         const user = await this.findByEmail(email);
 
-        if (user && await bcrypt.compare(password, user.password)) {
-            const { password, ...result } = user;
-            return result;
+        if (!user || !user.password) {
+            return null;
         }
 
-        return null;
+        const isPasswordValid = await bcrypt.compare(password, user.password);
+        if (!isPasswordValid) {
+            return null;
+        }
+
+        const { password: _, ...result } = user;
+        return result;
     }
 }

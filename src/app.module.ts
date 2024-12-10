@@ -11,6 +11,7 @@ import { JwtAuthGuard } from './modules/auth/guards/jwt-auth.guard';
 import { SecurityHeadersInterceptor } from './common/interceptors/security.interceptor';
 import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
 import {RedisCacheModule} from "@/modules/cache/cache.module";
+import {OAuthModule} from "@/modules/oauth/oauth.module";
 
 @Module({
   imports: [
@@ -21,6 +22,7 @@ import {RedisCacheModule} from "@/modules/cache/cache.module";
     UsersModule,
     AuthModule,
     RedisCacheModule,
+    OAuthModule
   ],
   providers: [
     {
