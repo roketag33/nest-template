@@ -1,6 +1,11 @@
 # Dockerfile
 FROM node:18-alpine As development
 
+RUN apk add --no-cache \
+    openssl \
+    openssl-dev \
+    libc6-compat
+
 # Créer le répertoire de l'app
 WORKDIR /usr/src/app
 
