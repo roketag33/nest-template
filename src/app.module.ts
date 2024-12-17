@@ -10,8 +10,9 @@ import { LoggingModule } from './modules/logging/logging.module';
 import { JwtAuthGuard } from './modules/auth/guards/jwt-auth.guard';
 import { SecurityHeadersInterceptor } from './common/interceptors/security.interceptor';
 import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
-import {RedisCacheModule} from "@/modules/cache/cache.module";
-import {OAuthModule} from "@/modules/oauth/oauth.module";
+import { RedisCacheModule } from '@/modules/cache/cache.module';
+import { OAuthModule } from '@/modules/oauth/oauth.module';
+import { MonitoringModule } from "@/modules/monitoring/monitoring.module";
 
 @Module({
   imports: [
@@ -22,7 +23,8 @@ import {OAuthModule} from "@/modules/oauth/oauth.module";
     UsersModule,
     AuthModule,
     RedisCacheModule,
-    OAuthModule
+    OAuthModule,
+    MonitoringModule,
   ],
   providers: [
     {

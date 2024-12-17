@@ -10,13 +10,18 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
     }
 
     canActivate(context: ExecutionContext) {
+        // Vérifie si la route est marquée comme publique
         const isPublic = this.reflector.getAllAndOverride<boolean>(IS_PUBLIC_KEY, [
             context.getHandler(),
             context.getClass(),
         ]);
+
+        // Si la route est publique, on permet l'accès
         if (isPublic) {
             return true;
         }
+
+        // Sinon, on applique la vérification JWT standard
         return super.canActivate(context);
     }
 }
