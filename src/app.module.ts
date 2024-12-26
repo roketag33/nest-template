@@ -12,7 +12,10 @@ import { SecurityHeadersInterceptor } from './common/interceptors/security.inter
 import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
 import { RedisCacheModule } from '@/modules/cache/cache.module';
 import { OAuthModule } from '@/modules/oauth/oauth.module';
-import { MonitoringModule } from "@/modules/monitoring/monitoring.module";
+import { MonitoringModule } from '@/modules/monitoring/monitoring.module';
+import { FileModule } from '@/modules/files/file.module';
+import { EventEmitterModule } from '@nestjs/event-emitter';
+import { WebhookModule } from '@/modules/webhooks/webhook.module';
 
 @Module({
   imports: [
@@ -25,6 +28,9 @@ import { MonitoringModule } from "@/modules/monitoring/monitoring.module";
     RedisCacheModule,
     OAuthModule,
     MonitoringModule,
+    FileModule,
+    EventEmitterModule.forRoot(),
+    WebhookModule,
   ],
   providers: [
     {

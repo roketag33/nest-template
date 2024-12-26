@@ -2,9 +2,10 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { INestApplication } from '@nestjs/common';
 
 export function setupSwagger(app: INestApplication) {
-    const config = new DocumentBuilder()
-        .setTitle('NestJS API Template')
-        .setDescription(`
+  const config = new DocumentBuilder()
+    .setTitle('NestJS API Template')
+    .setDescription(
+      `
       ## API Documentation
       
       ### Features
@@ -22,22 +23,23 @@ export function setupSwagger(app: INestApplication) {
       All endpoints are protected by rate limiting:
       - 100 requests per minute for public endpoints
       - 1000 requests per minute for authenticated endpoints
-    `)
-        .setVersion('1.0')
-        .addBearerAuth()
-        .addTag('auth', 'Authentication endpoints')
-        .addTag('users', 'User management')
-        .addServer('http://localhost:3000', 'Local development')
-        .addServer('https://api.production.com', 'Production')
-        .build();
+    `,
+    )
+    .setVersion('1.0')
+    .addBearerAuth()
+    .addTag('auth', 'Authentication endpoints')
+    .addTag('users', 'User management')
+    .addServer('http://localhost:3000', 'Local development')
+    .addServer('https://api.production.com', 'Production')
+    .build();
 
-    const document = SwaggerModule.createDocument(app, config);
-    SwaggerModule.setup('docs', app, document, {
-        swaggerOptions: {
-            persistAuthorization: true,
-            tagsSorter: 'alpha',
-            operationsSorter: 'alpha',
-        },
-        customCss: '.swagger-ui .topbar { display: none }',
-    });
+  const document = SwaggerModule.createDocument(app, config);
+  SwaggerModule.setup('docs', app, document, {
+    swaggerOptions: {
+      persistAuthorization: true,
+      tagsSorter: 'alpha',
+      operationsSorter: 'alpha',
+    },
+    customCss: '.swagger-ui .topbar { display: none }',
+  });
 }

@@ -1,0 +1,16 @@
+export enum FileEventType {
+  UPLOAD_STARTED = 'file.upload.started',
+  UPLOAD_PROGRESS = 'file.upload.progress',
+  UPLOAD_COMPLETED = 'file.upload.completed',
+  UPLOAD_FAILED = 'file.upload.failed',
+  CHUNK_RECEIVED = 'file.chunk.received',
+  VERSION_CREATED = 'file.version.created',
+  FILE_DELETED = 'file.deleted',
+  FILE_DOWNLOADED = 'file.downloaded',
+  OPERATION_SUCCESS = 'file.operation.success',
+  OPERATION_ERROR = 'file.operation.error',
+  WEBHOOK_PING = 'webhook.ping',
+  WEBHOOK_RETRY = 'webhook.retry',
+  DOWNLOAD_STARTED = 'file.download.started',
+  DOWNLOAD_COMPLETED = 'file.download.completed',
+}

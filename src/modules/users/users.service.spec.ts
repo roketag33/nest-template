@@ -61,9 +61,7 @@ describe('UsersService', () => {
     it('should throw ConflictException if email exists', async () => {
       mockPrismaService.user.findUnique.mockResolvedValueOnce({ id: 1 });
 
-      await expect(service.create(createUserDto)).rejects.toThrow(
-          ConflictException,
-      );
+      await expect(service.create(createUserDto)).rejects.toThrow(ConflictException);
     });
   });
 

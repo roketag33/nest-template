@@ -1,4 +1,9 @@
-import { Injectable, ConflictException, NotFoundException, UnauthorizedException } from '@nestjs/common';
+import {
+  Injectable,
+  ConflictException,
+  NotFoundException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CacheService } from '../cache/cache.service';
 import { MailService } from '../mail/mail.service';
@@ -9,342 +14,336 @@ import * as crypto from 'crypto';
 
 @Injectable()
 export class UsersService {
-    constructor(
-        private prisma: PrismaService,
-        private cacheService: CacheService,
-        private mailService: MailService,
-    ) {}
+  constructor(
+    private prisma: PrismaService,
+    private cacheService: CacheService,
+    private mailService: MailService,
+  ) {}
 
-    async create(createUserDto: CreateUserDto) {
-        // Vérifier si l'email existe déjà
-        const existingUser = await this.prisma.user.findUnique({
-            where: { email: createUserDto.email },
+  async create(createUserDto: CreateUserDto) {
+    // Vérifier si l'email existe déjà
+    const existingUser = await this.prisma.user.findUnique({
+      where: { email: createUserDto.email },
+    });
+
+    if (existingUser) {
+      throw new ConflictException('Email already exists');
+    }
+
+    // Hasher le mot de passe
+    const hashedPassword = await bcrypt.hash(createUserDto.password, 10);
+
+    try {
+      // Créer l'utilisateur
+      const user = await this.prisma.user.create({
+        data: {
+          ...createUserDto,
+          password: hashedPassword,
+          emailVerified: false,
+        },
+        select: {
+          id: true,
+          email: true,
+          name: true,
+          createdAt: true,
+        },
+      });
+
+      // Générer un token de vérification
+      const verificationToken = crypto.randomBytes(32).toString('hex');
+
+      // Sauvegarder le token dans le cache
+      await this.cacheService.set(
+        `email-verification:${verificationToken}`,
+        user.id,
+        60 * 60 * 24, // 24 heures
+      );
+
+      // Envoyer l'email de vérification
+      await this.mailService.sendWelcome(user as any, verificationToken);
+
+      // Invalider le cache des utilisateurs
+      await this.cacheService.del('users:all');
+
+      return user;
+    } catch (error) {
+      throw new Error('Error creating user');
+    }
+  }
+
+  async findAll() {
+    const cacheKey = 'users:all';
+
+    return this.cacheService.getOrSet(
+      cacheKey,
+      async () => {
+        const users = await this.prisma.user.findMany({
+          select: {
+            id: true,
+            email: true,
+            name: true,
+            emailVerified: true,
+            createdAt: true,
+          },
+          orderBy: {
+            createdAt: 'desc',
+          },
         });
 
-        if (existingUser) {
-            throw new ConflictException('Email already exists');
-        }
+        return users;
+      },
+      60 * 5, // Cache pour 5 minutes
+    );
+  }
 
-        // Hasher le mot de passe
-        const hashedPassword = await bcrypt.hash(createUserDto.password, 10);
+  async findOne(id: number) {
+    const cacheKey = `user:${id}`;
 
-        try {
-            // Créer l'utilisateur
-            const user = await this.prisma.user.create({
-                data: {
-                    ...createUserDto,
-                    password: hashedPassword,
-                    emailVerified: false,
-                },
-                select: {
-                    id: true,
-                    email: true,
-                    name: true,
-                    createdAt: true,
-                },
-            });
-
-            // Générer un token de vérification
-            const verificationToken = crypto.randomBytes(32).toString('hex');
-
-            // Sauvegarder le token dans le cache
-            await this.cacheService.set(
-                `email-verification:${verificationToken}`,
-                user.id,
-                60 * 60 * 24, // 24 heures
-            );
-
-            // Envoyer l'email de vérification
-            await this.mailService.sendWelcome(user as any, verificationToken);
-
-            // Invalider le cache des utilisateurs
-            await this.cacheService.del('users:all');
-
-            return user;
-        } catch (error) {
-            throw new Error('Error creating user');
-        }
-    }
-
-    async findAll() {
-        const cacheKey = 'users:all';
-
-        return this.cacheService.getOrSet(
-            cacheKey,
-            async () => {
-                const users = await this.prisma.user.findMany({
-                    select: {
-                        id: true,
-                        email: true,
-                        name: true,
-                        emailVerified: true,
-                        createdAt: true,
-                    },
-                    orderBy: {
-                        createdAt: 'desc',
-                    },
-                });
-
-                return users;
-            },
-            60 * 5, // Cache pour 5 minutes
-        );
-    }
-
-    async findOne(id: number) {
-        const cacheKey = `user:${id}`;
-
-        return this.cacheService.getOrSet(
-            cacheKey,
-            async () => {
-                const user = await this.prisma.user.findUnique({
-                    where: { id },
-                    select: {
-                        id: true,
-                        email: true,
-                        name: true,
-                        emailVerified: true,
-                        createdAt: true,
-                    },
-                });
-
-                if (!user) {
-                    throw new NotFoundException(`User with ID ${id} not found`);
-                }
-
-                return user;
-            },
-            60 * 5, // Cache pour 5 minutes
-        );
-    }
-
-    async findByEmail(email: string) {
+    return this.cacheService.getOrSet(
+      cacheKey,
+      async () => {
         const user = await this.prisma.user.findUnique({
-            where: { email },
+          where: { id },
+          select: {
+            id: true,
+            email: true,
+            name: true,
+            emailVerified: true,
+            createdAt: true,
+          },
         });
 
         if (!user) {
-            throw new NotFoundException(`User with email ${email} not found`);
+          throw new NotFoundException(`User with ID ${id} not found`);
         }
 
         return user;
+      },
+      60 * 5, // Cache pour 5 minutes
+    );
+  }
+
+  async findByEmail(email: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { email },
+    });
+
+    if (!user) {
+      throw new NotFoundException(`User with email ${email} not found`);
     }
 
-    async update(id: number, updateUserDto: UpdateUserDto) {
-        // Vérifier si l'utilisateur existe
-        const existingUser = await this.prisma.user.findUnique({
-            where: { id },
-        });
+    return user;
+  }
 
-        if (!existingUser) {
-            throw new NotFoundException(`User with ID ${id} not found`);
-        }
+  async update(id: number, updateUserDto: UpdateUserDto) {
+    // Vérifier si l'utilisateur existe
+    const existingUser = await this.prisma.user.findUnique({
+      where: { id },
+    });
 
-        // Si l'email est mis à jour, vérifier qu'il n'existe pas déjà
-        if (updateUserDto.email && updateUserDto.email !== existingUser.email) {
-            const emailExists = await this.prisma.user.findUnique({
-                where: { email: updateUserDto.email },
-            });
-
-            if (emailExists) {
-                throw new ConflictException('Email already exists');
-            }
-        }
-
-        // Si le mot de passe est mis à jour, le hasher
-        if (updateUserDto.password) {
-            updateUserDto.password = await bcrypt.hash(updateUserDto.password, 10);
-        }
-
-        try {
-            const updatedUser = await this.prisma.user.update({
-                where: { id },
-                data: updateUserDto,
-                select: {
-                    id: true,
-                    email: true,
-                    name: true,
-                    emailVerified: true,
-                    createdAt: true,
-                },
-            });
-
-            // Invalider les caches
-            await Promise.all([
-                this.cacheService.del('users:all'),
-                this.cacheService.del(`user:${id}`),
-            ]);
-
-            return updatedUser;
-        } catch (error) {
-            if (error.code === 'P2025') {
-                throw new NotFoundException(`User with ID ${id} not found`);
-            }
-            throw error;
-        }
+    if (!existingUser) {
+      throw new NotFoundException(`User with ID ${id} not found`);
     }
 
-    async remove(id: number) {
-        try {
-            // Vérifier si l'utilisateur existe
-            const user = await this.prisma.user.findUnique({
-                where: { id },
-            });
+    // Si l'email est mis à jour, vérifier qu'il n'existe pas déjà
+    if (updateUserDto.email && updateUserDto.email !== existingUser.email) {
+      const emailExists = await this.prisma.user.findUnique({
+        where: { email: updateUserDto.email },
+      });
 
-            if (!user) {
-                throw new NotFoundException(`User with ID ${id} not found`);
-            }
-
-            // Supprimer l'utilisateur
-            await this.prisma.user.delete({
-                where: { id },
-            });
-
-            // Invalider les caches
-            await Promise.all([
-                this.cacheService.del('users:all'),
-                this.cacheService.del(`user:${id}`),
-            ]);
-
-            return { message: 'User deleted successfully' };
-        } catch (error) {
-            if (error.code === 'P2025') {
-                throw new NotFoundException(`User with ID ${id} not found`);
-            }
-            throw error;
-        }
+      if (emailExists) {
+        throw new ConflictException('Email already exists');
+      }
     }
 
-    async verifyEmail(token: string) {
-        // Récupérer l'ID de l'utilisateur depuis le cache
-        const userId = await this.cacheService.get<number>(`email-verification:${token}`);
-
-        if (!userId) {
-            throw new UnauthorizedException('Invalid or expired verification token');
-        }
-
-        // Mettre à jour l'utilisateur
-        const user = await this.prisma.user.update({
-            where: { id: userId },
-            data: { emailVerified: true },
-            select: {
-                id: true,
-                email: true,
-                name: true,
-                emailVerified: true,
-                createdAt: true,
-            },
-        });
-
-        // Supprimer le token du cache
-        await this.cacheService.del(`email-verification:${token}`);
-
-        return user;
+    // Si le mot de passe est mis à jour, le hasher
+    if (updateUserDto.password) {
+      updateUserDto.password = await bcrypt.hash(updateUserDto.password, 10);
     }
 
-    async forgotPassword(email: string) {
-        const user = await this.findByEmail(email);
+    try {
+      const updatedUser = await this.prisma.user.update({
+        where: { id },
+        data: updateUserDto,
+        select: {
+          id: true,
+          email: true,
+          name: true,
+          emailVerified: true,
+          createdAt: true,
+        },
+      });
 
-        // Générer un token de réinitialisation
-        const resetToken = crypto.randomBytes(32).toString('hex');
+      // Invalider les caches
+      await Promise.all([this.cacheService.del('users:all'), this.cacheService.del(`user:${id}`)]);
 
-        // Sauvegarder le token dans le cache
-        await this.cacheService.set(
-            `password-reset:${resetToken}`,
-            user.id,
-            60 * 60, // 1 heure
-        );
+      return updatedUser;
+    } catch (error) {
+      if (error.code === 'P2025') {
+        throw new NotFoundException(`User with ID ${id} not found`);
+      }
+      throw error;
+    }
+  }
 
-        // Envoyer l'email de réinitialisation
-        await this.mailService.sendPasswordReset(user, resetToken);
+  async remove(id: number) {
+    try {
+      // Vérifier si l'utilisateur existe
+      const user = await this.prisma.user.findUnique({
+        where: { id },
+      });
 
-        return { message: 'Password reset email sent' };
+      if (!user) {
+        throw new NotFoundException(`User with ID ${id} not found`);
+      }
+
+      // Supprimer l'utilisateur
+      await this.prisma.user.delete({
+        where: { id },
+      });
+
+      // Invalider les caches
+      await Promise.all([this.cacheService.del('users:all'), this.cacheService.del(`user:${id}`)]);
+
+      return { message: 'User deleted successfully' };
+    } catch (error) {
+      if (error.code === 'P2025') {
+        throw new NotFoundException(`User with ID ${id} not found`);
+      }
+      throw error;
+    }
+  }
+
+  async verifyEmail(token: string) {
+    // Récupérer l'ID de l'utilisateur depuis le cache
+    const userId = await this.cacheService.get<number>(`email-verification:${token}`);
+
+    if (!userId) {
+      throw new UnauthorizedException('Invalid or expired verification token');
     }
 
-    async resetPassword(token: string, newPassword: string) {
-        // Récupérer l'ID de l'utilisateur depuis le cache
-        const userId = await this.cacheService.get<number>(`password-reset:${token}`);
+    // Mettre à jour l'utilisateur
+    const user = await this.prisma.user.update({
+      where: { id: userId },
+      data: { emailVerified: true },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        emailVerified: true,
+        createdAt: true,
+      },
+    });
 
-        if (!userId) {
-            throw new UnauthorizedException('Invalid or expired reset token');
-        }
+    // Supprimer le token du cache
+    await this.cacheService.del(`email-verification:${token}`);
 
-        // Hasher le nouveau mot de passe
-        const hashedPassword = await bcrypt.hash(newPassword, 10);
+    return user;
+  }
 
-        // Mettre à jour l'utilisateur
-        const user = await this.prisma.user.update({
-            where: { id: userId },
-            data: { password: hashedPassword },
-            select: {
-                id: true,
-                email: true,
-                name: true,
-                emailVerified: true,
-                createdAt: true,
-            },
-        });
+  async forgotPassword(email: string) {
+    const user = await this.findByEmail(email);
 
-        // Supprimer le token du cache
-        await this.cacheService.del(`password-reset:${token}`);
+    // Générer un token de réinitialisation
+    const resetToken = crypto.randomBytes(32).toString('hex');
 
-        // Envoyer l'email de confirmation
-        await this.mailService.sendPasswordChanged(user as any);
+    // Sauvegarder le token dans le cache
+    await this.cacheService.set(
+      `password-reset:${resetToken}`,
+      user.id,
+      60 * 60, // 1 heure
+    );
 
-        return { message: 'Password reset successful' };
+    // Envoyer l'email de réinitialisation
+    await this.mailService.sendPasswordReset(user, resetToken);
+
+    return { message: 'Password reset email sent' };
+  }
+
+  async resetPassword(token: string, newPassword: string) {
+    // Récupérer l'ID de l'utilisateur depuis le cache
+    const userId = await this.cacheService.get<number>(`password-reset:${token}`);
+
+    if (!userId) {
+      throw new UnauthorizedException('Invalid or expired reset token');
     }
 
-    async changePassword(id: number, oldPassword: string, newPassword: string) {
-        const user = await this.prisma.user.findUnique({
-            where: { id },
-        });
+    // Hasher le nouveau mot de passe
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
 
-        if (!user) {
-            throw new NotFoundException(`User with ID ${id} not found`);
-        }
+    // Mettre à jour l'utilisateur
+    const user = await this.prisma.user.update({
+      where: { id: userId },
+      data: { password: hashedPassword },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        emailVerified: true,
+        createdAt: true,
+      },
+    });
 
-        // Vérifier si l'utilisateur a un mot de passe (n'est pas un utilisateur OAuth)
-        if (!user.password) {
-            throw new UnauthorizedException('Cannot change password for OAuth users');
-        }
+    // Supprimer le token du cache
+    await this.cacheService.del(`password-reset:${token}`);
 
-        const isPasswordValid = await bcrypt.compare(oldPassword, user.password);
-        if (!isPasswordValid) {
-            throw new UnauthorizedException('Current password is incorrect');
-        }
+    // Envoyer l'email de confirmation
+    await this.mailService.sendPasswordChanged(user as any);
 
-        const hashedPassword = await bcrypt.hash(newPassword, 10);
+    return { message: 'Password reset successful' };
+  }
 
-        const updatedUser = await this.prisma.user.update({
-            where: { id },
-            data: { password: hashedPassword },
-            select: {
-                id: true,
-                email: true,
-                name: true,
-                emailVerified: true,
-                createdAt: true,
-            },
-        });
+  async changePassword(id: number, oldPassword: string, newPassword: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id },
+    });
 
-        await this.mailService.sendPasswordChanged(updatedUser);
-
-        return { message: 'Password changed successfully' };
+    if (!user) {
+      throw new NotFoundException(`User with ID ${id} not found`);
     }
 
-    async validateUser(email: string, password: string) {
-        const user = await this.findByEmail(email);
-
-        if (!user || !user.password) {
-            return null;
-        }
-
-        const isPasswordValid = await bcrypt.compare(password, user.password);
-        if (!isPasswordValid) {
-            return null;
-        }
-
-        const { password: _, ...result } = user;
-        return result;
+    // Vérifier si l'utilisateur a un mot de passe (n'est pas un utilisateur OAuth)
+    if (!user.password) {
+      throw new UnauthorizedException('Cannot change password for OAuth users');
     }
+
+    const isPasswordValid = await bcrypt.compare(oldPassword, user.password);
+    if (!isPasswordValid) {
+      throw new UnauthorizedException('Current password is incorrect');
+    }
+
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    const updatedUser = await this.prisma.user.update({
+      where: { id },
+      data: { password: hashedPassword },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        emailVerified: true,
+        createdAt: true,
+      },
+    });
+
+    await this.mailService.sendPasswordChanged(updatedUser);
+
+    return { message: 'Password changed successfully' };
+  }
+
+  async validateUser(email: string, password: string) {
+    const user = await this.findByEmail(email);
+
+    if (!user || !user.password) {
+      return null;
+    }
+
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+    if (!isPasswordValid) {
+      return null;
+    }
+
+    const { password: _, ...result } = user;
+    return result;
+  }
 }

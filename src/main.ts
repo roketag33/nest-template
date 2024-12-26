@@ -22,20 +22,20 @@ async function bootstrap() {
 
   // Security - Helmet
   app.use(
-      helmet({
-        contentSecurityPolicy: {
-          directives: {
-            defaultSrc: [`'self'`],
-            styleSrc: [`'self'`, `'unsafe-inline'`],
-            imgSrc: [`'self'`, 'data:', 'validator.swagger.io'],
-            scriptSrc: [`'self'`, `https: 'unsafe-inline'`],
-          },
+    helmet({
+      contentSecurityPolicy: {
+        directives: {
+          defaultSrc: [`'self'`],
+          styleSrc: [`'self'`, `'unsafe-inline'`],
+          imgSrc: [`'self'`, 'data:', 'validator.swagger.io'],
+          scriptSrc: [`'self'`, `https: 'unsafe-inline'`],
         },
-        crossOriginEmbedderPolicy: false,
-        crossOriginResourcePolicy: {
-          policy: 'cross-origin',
-        },
-      }),
+      },
+      crossOriginEmbedderPolicy: false,
+      crossOriginResourcePolicy: {
+        policy: 'cross-origin',
+      },
+    }),
   );
 
   // CORS
@@ -54,15 +54,15 @@ async function bootstrap() {
 
   // Global Validation Pipe
   app.useGlobalPipes(
-      new ValidationPipe({
-        whitelist: true, // Supprime les propriétés non décorées des DTOs
-        transform: true, // Transforme automatiquement les payloads selon les DTOs
-        forbidNonWhitelisted: true, // Rejette les requêtes avec des propriétés non whitelistées
-        transformOptions: {
-          enableImplicitConversion: true, // Conversion implicite des types
-        },
-        validateCustomDecorators: true, // Valide les décorateurs personnalisés
-      }),
+    new ValidationPipe({
+      whitelist: true, // Supprime les propriétés non décorées des DTOs
+      transform: true, // Transforme automatiquement les payloads selon les DTOs
+      forbidNonWhitelisted: true, // Rejette les requêtes avec des propriétés non whitelistées
+      transformOptions: {
+        enableImplicitConversion: true, // Conversion implicite des types
+      },
+      validateCustomDecorators: true, // Valide les décorateurs personnalisés
+    }),
   );
 
   // Global Prefix
@@ -100,12 +100,12 @@ process.on('unhandledRejection', (reason, promise) => {
 });
 
 // Handle uncaught exceptions
-process.on('uncaughtException', (error) => {
+process.on('uncaughtException', error => {
   console.error('Uncaught Exception:', error);
   // Application specific logging, throwing an error, or other logic here
 });
 
-bootstrap().catch((error) => {
+bootstrap().catch(error => {
   console.error('Error during bootstrap:', error);
   process.exit(1);
 });

@@ -5,19 +5,19 @@ import { CacheService } from './cache.service';
 import * as redisStore from 'cache-manager-redis-store';
 
 @Module({
-    imports: [
-        CacheModule.registerAsync({
-            isGlobal: true,
-            inject: [ConfigService],
-            useFactory: (configService: ConfigService) => ({
-                store: redisStore as any,
-                url: configService.get('REDIS_URL'),
-                ttl: configService.get<number>('CACHE_TTL'),
-                max: configService.get<number>('CACHE_MAX'),
-            }),
-        }),
-    ],
-    providers: [CacheService],
-    exports: [CacheService],
+  imports: [
+    CacheModule.registerAsync({
+      isGlobal: true,
+      inject: [ConfigService],
+      useFactory: (configService: ConfigService) => ({
+        store: redisStore as any,
+        url: configService.get('REDIS_URL'),
+        ttl: configService.get<number>('CACHE_TTL'),
+        max: configService.get<number>('CACHE_MAX'),
+      }),
+    }),
+  ],
+  providers: [CacheService],
+  exports: [CacheService],
 })
 export class RedisCacheModule {}

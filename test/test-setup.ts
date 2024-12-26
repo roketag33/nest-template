@@ -5,37 +5,37 @@ import { PrismaService } from '../src/prisma/prisma.service';
 import { TestDatabase } from './helpers/test-database';
 
 export class TestSetup {
-    app: INestApplication;
-    prisma: PrismaService;
-    testDatabase: TestDatabase;
+  app: INestApplication;
+  prisma: PrismaService;
+  testDatabase: TestDatabase;
 
-    async initialize() {
-        const moduleFixture: TestingModule = await Test.createTestingModule({
-            imports: [AppModule],
-        }).compile();
+  async initialize() {
+    const moduleFixture: TestingModule = await Test.createTestingModule({
+      imports: [AppModule],
+    }).compile();
 
-        this.app = moduleFixture.createNestApplication();
-        this.prisma = this.app.get<PrismaService>(PrismaService);
-        this.testDatabase = new TestDatabase(this.prisma);
+    this.app = moduleFixture.createNestApplication();
+    this.prisma = this.app.get<PrismaService>(PrismaService);
+    this.testDatabase = new TestDatabase(this.prisma);
 
-        // Configuration globale
-        this.app.useGlobalPipes(
-            new ValidationPipe({
-                whitelist: true,
-                transform: true,
-                forbidNonWhitelisted: true,
-            }),
-        );
+    // Configuration globale
+    this.app.useGlobalPipes(
+      new ValidationPipe({
+        whitelist: true,
+        transform: true,
+        forbidNonWhitelisted: true,
+      }),
+    );
 
-        await this.app.init();
-        return this;
-    }
+    await this.app.init();
+    return this;
+  }
 
-    async close() {
-        await this.app.close();
-    }
+  async close() {
+    await this.app.close();
+  }
 
-    async cleanupDatabase() {
-        await this.testDatabase.cleanDatabase();
-    }
+  async cleanupDatabase() {
+    await this.testDatabase.cleanDatabase();
+  }
 }
